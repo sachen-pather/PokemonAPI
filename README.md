@@ -2,7 +2,7 @@
 
 A RESTful API built with ASP.NET Core that interacts with [PokeAPI](https://pokeapi.co/) to retrieve, filter, compare, and analyze Pokémon data. This project demonstrates clean architecture principles, performance optimization through caching, and custom battle logic for Pokémon comparisons.
 
-## 🚀 Features
+##  Features
 
 - **Retrieve Pokémon Details**: Get comprehensive information about any Pokémon by name or ID
 - **Advanced Filtering**: Filter Pokémon by type, ability, stats ranges (HP, Attack, Defense, etc.), height, and weight
@@ -13,7 +13,7 @@ A RESTful API built with ASP.NET Core that interacts with [PokeAPI](https://poke
 - **Comprehensive Error Handling**: Global exception handler with consistent error responses
 - **API Documentation**: Interactive Swagger/OpenAPI documentation
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 - **Language**: C# (.NET 6.0+)
 - **Framework**: ASP.NET Core Web API
@@ -22,13 +22,13 @@ A RESTful API built with ASP.NET Core that interacts with [PokeAPI](https://poke
 - **External API**: PokeAPI v2
 - **Architecture**: Three-layer architecture (Controller → Service → Repository)
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - [.NET 6.0 SDK](https://dotnet.microsoft.com/download) or later
 - Visual Studio 2022, Visual Studio Code, or JetBrains Rider
 - Internet connection (for PokeAPI access)
 
-## ⚙️ Installation & Setup
+##  Installation & Setup
 
 1. **Clone the repository**
    ```bash
@@ -55,7 +55,7 @@ A RESTful API built with ASP.NET Core that interacts with [PokeAPI](https://poke
    - HTTPS: `https://localhost:7087/swagger`
    - HTTP: `http://localhost:5243/swagger`
 
-## 🎯 API Endpoints
+##  API Endpoints
 
 ### Pokémon Information
 
@@ -214,7 +214,7 @@ Advanced filtering with multiple criteria:
 curl "https://localhost:7087/api/Pokemon/filter?MinAttack=100&Type=dragon&MaxSpeed=80"
 ```
 
-## 🏗️ Architecture
+##  Architecture
 
 The project follows a clean, three-layer architecture:
 
@@ -250,7 +250,7 @@ The project follows a clean, three-layer architecture:
 - **DTO Pattern**: Separation between API models and domain models
 - **Middleware Pattern**: Global exception handling
 
-## 🚄 Performance Optimization
+##  Performance Optimization
 
 ### Caching Strategy
 
@@ -267,7 +267,7 @@ The application implements a cache-first approach using `IMemoryCache`:
 
 The `GetPokemonDetailsAsync` method uses `Task.WhenAll` for parallel fetching, significantly improving performance for batch operations like filtering.
 
-## 🔐 Error Handling
+##  Error Handling
 
 All errors are handled by a global exception handler middleware that returns consistent error responses:
 
@@ -303,13 +303,13 @@ All errors are handled by a global exception handler middleware that returns con
 4. **Filter**: Try `MinTotal=500&Type=fire&MinAttack=80`
 5. **Cache Testing**: Run the same query twice and check console logs for cache hits
 
-## ⚠️ Known Limitations
+##  Known Limitations
 
 - **Filter Endpoint Timeout**: The `/filter` endpoint may timeout with very broad criteria due to the need to fetch all Pokémon data. Use specific filters to improve performance.
 - **Rate Limiting**: No rate limiting implemented. Relies on PokeAPI's rate limits.
 - **Authentication**: No authentication required (public API).
 
-## 🔮 Future Enhancements
+##  Future Enhancements
 
 - Unit and integration tests
 - Database caching (Redis/SQL Server)
@@ -321,7 +321,7 @@ All errors are handled by a global exception handler middleware that returns con
 - Docker containerization
 - CI/CD pipeline
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 PokemonAPI/
@@ -347,15 +347,15 @@ PokemonAPI/
 └── Program.cs
 ```
 
-## 🤝 Contributing
+##  Contributing
 
 This is a demonstration project for a coding assessment. Contributions are not currently accepted.
 
-## 📄 License
+##  License
 
 This project is created for educational and assessment purposes.
 
-## 📞 Contact
+##  Contact
 
 For questions about this project, please contact the repository owner.
 
