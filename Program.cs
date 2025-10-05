@@ -34,7 +34,10 @@ namespace PokemonAPI
             {
                 options.AddPolicy("AllowReact", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173")
+                    policy.WithOrigins(
+    "http://localhost:5173",
+    "https://delicate-flan-e8162f.netlify.app"
+)
                           .AllowAnyMethod()
                           .AllowAnyHeader();
                 });

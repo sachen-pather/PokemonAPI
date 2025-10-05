@@ -88,7 +88,9 @@ public class PokeApiClient : IPokeApiClient
 
     public async Task<AbilityResponse?> GetPokemonByAbilityAsync(string ability)
     {
-        var cacheKey = $"ability_{ability.ToLower()}";
+        // Convert display name to API format (lowercase with hyphens)
+        var apiAbilityName = ability.ToLower().Replace(" ", "-");
+        var cacheKey = $"ability_{apiAbilityName}";
 
         if (_cache.TryGetValue(cacheKey, out AbilityResponse? cached))
         {
@@ -100,7 +102,7 @@ public class PokeApiClient : IPokeApiClient
         {
             _logger.LogInformation("Fetching Pokemon by ability from API: {Ability}", ability);
 
-            var response = await _httpClient.GetAsync($"ability/{ability.ToLower()}");
+            var response = await _httpClient.GetAsync($"ability/{apiAbilityName}");
 
             if (!response.IsSuccessStatusCode)
             {

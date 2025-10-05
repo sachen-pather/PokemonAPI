@@ -18,8 +18,8 @@ public class FilterRequest
     public int? MaxSpecialDefense { get; set; }
     public int? MinSpeed { get; set; }
     public int? MaxSpeed { get; set; }
-    public string? Type { get; set; }         
-    public string? Ability { get; set; }     
+    public string? Type { get; set; }
+    public List<string>? Abilities { get; set; }
     public int? MinTotal { get; set; }        
     public int? MaxTotal { get; set; }        
 }
