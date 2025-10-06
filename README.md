@@ -346,19 +346,3 @@ PokemonAPI/
 │   └── GlobalExceptionHandler.cs
 └── Program.cs
 ```
-
-##  Contributing
-
-This is a demonstration project for a coding assessment. Contributions are not currently accepted.
-
-##  License
-
-This project is created for educational and assessment purposes.
-
-##  Contact
-
-For questions about this project, please contact the repository owner.
-
----
-
-**Note**: This project uses the free PokeAPI service. Please be respectful of their resources and implement appropriate caching in production environments.
