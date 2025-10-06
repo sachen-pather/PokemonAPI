@@ -1,5 +1,10 @@
 ﻿using System.Text.Json.Serialization;
 
+/// Represents the API response when fetching type information from the PokeAPI /type/{type} endpoint.
+/// Example: GET https://pokeapi.co/api/v2/type/fire
+/// Contains damage relationships that define type effectiveness in Pokemon battles
+/// (e.g., Fire is super effective against Grass, but weak against Water).
+
 namespace PokemonAPI.Models.ApiResponses;
 
 public class TypeResponse

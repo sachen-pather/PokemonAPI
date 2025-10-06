@@ -1,5 +1,11 @@
 ﻿namespace PokemonAPI.Models.DTOs;
 
+/// Request model for filtering Pokemon based on multiple criteria including physical attributes and battle stats.
+/// Used by the /api/pokemon/filter endpoint to search for Pokemon matching specific characteristics.
+/// All properties are optional (nullable) - only specified filters are applied.
+/// Example: Find all Fire-type Pokemon with Attack > 100 and Speed between 80-120.
+/// Note: For best performance, include Type or Abilities filters to narrow the search scope.
+
 public class FilterRequest
 {
     public int? MinHeight { get; set; }

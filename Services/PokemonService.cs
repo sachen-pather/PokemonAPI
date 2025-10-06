@@ -51,69 +51,146 @@ public class PokemonService : IPokemonService
 
     public async Task<IEnumerable<PokemonSummary>> FilterPokemonAsync(FilterRequest filter)
     {
-        var allPokemon = new List<PokemonSummary>();
-        var offset = 0;
-        const int batchSize = 1000;
-        PokemonListResponse? listResponse;
+        // Step 1: Use specialized endpoints first to narrow results
+        IEnumerable<PokemonSummary>? candidatePokemon = null;
 
-        do
+        // If filtering by type, start with type endpoint (much faster)
+        if (!string.IsNullOrEmpty(filter.Type))
         {
-            _logger.LogInformation("Fetching Pokémon list: offset={Offset}", offset);
-            listResponse = await _pokeApiClient.GetPokemonListAsync(batchSize, offset);
-            if (listResponse?.Results != null)
+            _logger.LogInformation("Using type filter optimization for: {Type}", filter.Type);
+            candidatePokemon = await GetPokemonByTypeAsync(filter.Type);
+
+            // If no other filters, return immediately
+            if (!HasStatFilters(filter))
             {
-                _logger.LogInformation("Fetched {Count} Pokémon at offset {Offset}, Next: {Next}",
-                    listResponse.Results.Count, offset, listResponse.Next);
-                var pokemonUrls = listResponse.Results.Select(r => r.Url);
-                var pokemonDetails = await _pokeApiClient.GetPokemonDetailsAsync(pokemonUrls);
+                return candidatePokemon;
+            }
+        }
+        // If filtering by ability, use ability endpoint
+        else if (filter.Abilities != null && filter.Abilities.Any())
+        {
+            _logger.LogInformation("Using ability filter optimization for: {Ability}", filter.Abilities.First());
+            candidatePokemon = await GetPokemonByAbilityAsync(filter.Abilities.First());
 
-                var summaries = new List<PokemonSummary>();
-                foreach (var detail in pokemonDetails)
+            if (!HasStatFilters(filter) && filter.Abilities.Count == 1)
+            {
+                return candidatePokemon;
+            }
+        }
+
+        // Step 2: If we have candidates from step 1, fetch their details
+        // Otherwise, fetch ALL pokemon (with limits)
+        List<PokemonSummary> results = new List<PokemonSummary>();
+
+        if (candidatePokemon != null)
+        {
+            // Process candidates in smaller batches with throttling
+            var candidateList = candidatePokemon.ToList();
+            _logger.LogInformation("Processing {Count} candidate Pokemon", candidateList.Count);
+
+            const int batchSize = 50; // Process 50 at a time
+            for (int i = 0; i < candidateList.Count; i += batchSize)
+            {
+                var batch = candidateList.Skip(i).Take(batchSize);
+                var urls = batch.Select(p => p.Url);
+
+                var details = await _pokeApiClient.GetPokemonDetailsAsync(urls);
+
+                foreach (var detail in details)
                 {
-                    var spriteUrl = detail.Sprites.Other?.OfficialArtwork?.FrontDefault
-                        ?? detail.Sprites.FrontDefault
-                        ?? $"https://pokeapi.co/api/v2/pokemon/{detail.Id}/";
-                    var pokemon = new PokemonDetail(
-                        Id: detail.Id,
-                        Name: CapitalizeName(detail.Name),
-                        Height: detail.Height,
-                        Weight: detail.Weight,
-                        Types: detail.Types.Select(t => CapitalizeName(t.Type.Name)).ToArray(),
-                        Abilities: detail.Abilities.Select(a => CapitalizeName(a.Ability.Name)).ToArray(),
-                        Stats: new PokemonStats(
-                            HP: detail.Stats.FirstOrDefault(s => s.Stat.Name == "hp")?.BaseStat ?? 0,
-                            Attack: detail.Stats.FirstOrDefault(s => s.Stat.Name == "attack")?.BaseStat ?? 0,
-                            Defense: detail.Stats.FirstOrDefault(s => s.Stat.Name == "defense")?.BaseStat ?? 0,
-                            SpecialAttack: detail.Stats.FirstOrDefault(s => s.Stat.Name == "special-attack")?.BaseStat ?? 0,
-                            SpecialDefense: detail.Stats.FirstOrDefault(s => s.Stat.Name == "special-defense")?.BaseStat ?? 0,
-                            Speed: detail.Stats.FirstOrDefault(s => s.Stat.Name == "speed")?.BaseStat ?? 0,
-                            Total: detail.Stats.Sum(s => s.BaseStat)
-                        ),
-                        SpriteUrl: spriteUrl
-                    );
-
+                    var pokemon = ConvertToPokemonDetail(detail);
                     if (MatchesFilter(pokemon, filter))
                     {
-                        summaries.Add(new PokemonSummary(
+                        results.Add(new PokemonSummary(
                             Id: pokemon.Id,
                             Name: pokemon.Name,
                             Url: $"https://pokeapi.co/api/v2/pokemon/{pokemon.Id}/"
                         ));
                     }
                 }
-                allPokemon.AddRange(summaries);
-            }
-            else
-            {
-                _logger.LogWarning("No results or null response at offset {Offset}", offset);
-            }
-            offset += batchSize;
-        } while (listResponse?.Next != null);
 
-        _logger.LogInformation("Filter result generated for: {Filter}, Total Pokémon: {Count}", filter, allPokemon.Count);
-        return allPokemon;
+                _logger.LogInformation("Processed batch {Current}/{Total}",
+                    Math.Min(i + batchSize, candidateList.Count), candidateList.Count);
+            }
+        }
+        else
+        {
+            // No optimization possible - but limit to reasonable amount
+            _logger.LogWarning("No type/ability filter - limiting to first 500 Pokemon");
+            const int maxPokemon = 500; // Reasonable limit
+            const int batchSize = 100;
+
+            for (int offset = 0; offset < maxPokemon; offset += batchSize)
+            {
+                var listResponse = await _pokeApiClient.GetPokemonListAsync(batchSize, offset);
+                if (listResponse?.Results == null || !listResponse.Results.Any())
+                    break;
+
+                var urls = listResponse.Results.Select(r => r.Url);
+                var details = await _pokeApiClient.GetPokemonDetailsAsync(urls);
+
+                foreach (var detail in details)
+                {
+                    var pokemon = ConvertToPokemonDetail(detail);
+                    if (MatchesFilter(pokemon, filter))
+                    {
+                        results.Add(new PokemonSummary(
+                            Id: pokemon.Id,
+                            Name: pokemon.Name,
+                            Url: $"https://pokeapi.co/api/v2/pokemon/{pokemon.Id}/"
+                        ));
+                    }
+                }
+
+                _logger.LogInformation("Scanned {Count} Pokemon, found {Results} matches",
+                    offset + batchSize, results.Count);
+            }
+        }
+
+        _logger.LogInformation("Filter complete. Found {Count} matching Pokemon", results.Count);
+        return results;
     }
 
+    // Helper method to check if filter has stat constraints
+    private bool HasStatFilters(FilterRequest filter)
+    {
+        return filter.MinHeight.HasValue || filter.MaxHeight.HasValue ||
+               filter.MinWeight.HasValue || filter.MaxWeight.HasValue ||
+               filter.MinHp.HasValue || filter.MaxHp.HasValue ||
+               filter.MinAttack.HasValue || filter.MaxAttack.HasValue ||
+               filter.MinDefense.HasValue || filter.MaxDefense.HasValue ||
+               filter.MinSpecialAttack.HasValue || filter.MaxSpecialAttack.HasValue ||
+               filter.MinSpecialDefense.HasValue || filter.MaxSpecialDefense.HasValue ||
+               filter.MinSpeed.HasValue || filter.MaxSpeed.HasValue ||
+               filter.MinTotal.HasValue || filter.MaxTotal.HasValue;
+    }
+
+    // Extract conversion logic to helper method
+    private PokemonDetail ConvertToPokemonDetail(PokemonApiResponse detail)
+    {
+        var spriteUrl = detail.Sprites.Other?.OfficialArtwork?.FrontDefault
+            ?? detail.Sprites.FrontDefault
+            ?? $"https://pokeapi.co/api/v2/pokemon/{detail.Id}/";
+
+        return new PokemonDetail(
+            Id: detail.Id,
+            Name: CapitalizeName(detail.Name),
+            Height: detail.Height,
+            Weight: detail.Weight,
+            Types: detail.Types.Select(t => CapitalizeName(t.Type.Name)).ToArray(),
+            Abilities: detail.Abilities.Select(a => CapitalizeName(a.Ability.Name)).ToArray(),
+            Stats: new PokemonStats(
+                HP: detail.Stats.FirstOrDefault(s => s.Stat.Name == "hp")?.BaseStat ?? 0,
+                Attack: detail.Stats.FirstOrDefault(s => s.Stat.Name == "attack")?.BaseStat ?? 0,
+                Defense: detail.Stats.FirstOrDefault(s => s.Stat.Name == "defense")?.BaseStat ?? 0,
+                SpecialAttack: detail.Stats.FirstOrDefault(s => s.Stat.Name == "special-attack")?.BaseStat ?? 0,
+                SpecialDefense: detail.Stats.FirstOrDefault(s => s.Stat.Name == "special-defense")?.BaseStat ?? 0,
+                Speed: detail.Stats.FirstOrDefault(s => s.Stat.Name == "speed")?.BaseStat ?? 0,
+                Total: detail.Stats.Sum(s => s.BaseStat)
+            ),
+            SpriteUrl: spriteUrl
+        );
+    }
     private bool MatchesFilter(PokemonDetail pokemon, FilterRequest filter)
     {
         bool heightMatch = (!filter.MinHeight.HasValue || pokemon.Height >= filter.MinHeight) &&

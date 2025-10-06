@@ -1,5 +1,9 @@
 ﻿namespace PokemonAPI.Models.DTOs;
 
+// Response model containing the complete results of a Pokemon battle comparison.
+/// Returned by the /api/pokemon/compare endpoint after simulating a battle between two Pokemon.
+/// Includes winner determination, detailed stats, type effectiveness, ability impacts, and battle reasoning.
+
 public record ComparisonResult(
     string Pokemon1,
     string Pokemon2,

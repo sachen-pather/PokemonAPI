@@ -3,6 +3,17 @@ using PokemonAPI.Models.ApiResponses;
 
 namespace PokemonAPI.Repositories;
 
+/// Implementation of IPokeApiClient that handles all HTTP communication with the external PokeAPI (pokeapi.co).
+/// Responsibilities:
+/// - Makes HTTP requests to PokeAPI endpoints
+/// - Deserializes JSON responses into strongly-typed models
+/// - Implements caching to reduce API calls and improve performance
+/// - Handles errors and logs all operations
+/// - Normalizes input (lowercase, hyphenation) to match API expectations
+/// 
+/// Note: This class implements the Repository pattern, isolating external API concerns from business logic.
+/// The HttpClient is injected and should be configured with base URL and timeout in Program.cs/Startup.cs.
+
 public class PokeApiClient : IPokeApiClient
 {
     private readonly HttpClient _httpClient;

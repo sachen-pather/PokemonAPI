@@ -1,5 +1,11 @@
 ﻿using System.Text.Json.Serialization;
 
+/// Represents the complete API response when fetching detailed information about a specific Pokemon 
+/// from the PokeAPI /pokemon/{id-or-name} endpoint.
+/// Example: GET https://pokeapi.co/api/v2/pokemon/25 (for Pikachu)
+/// Contains all core Pokemon data including stats, types, abilities, and sprite images.
+/// </summary>
+
 namespace PokemonAPI.Models.ApiResponses;
 
 public class PokemonApiResponse
